@@ -17,7 +17,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install Libraries & Playwright
         run: |
@@ -35,7 +35,7 @@ jobs:
           timeout 350m python bot.py
 
       - name: Save Data & Trigger Next Session
-        if: always()
+        if: "!failure()"
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
