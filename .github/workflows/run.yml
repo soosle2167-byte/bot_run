@@ -51,7 +51,7 @@ jobs:
           ) &
           SYNC_PID=$!
           set +e
-          timeout 3m python bot.py
+          timeout 340m python bot.py
           echo $? > bot_exit_code.txt
           kill $SYNC_PID 2>/dev/null || true
 
