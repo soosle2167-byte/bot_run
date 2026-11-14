@@ -30,23 +30,48 @@ jobs:
           git clone https://x-access-token:${{ secrets.GH_PAT }}@github.com/soosle2167-byte/bot-data.git temp_data
           cp -rf temp_data/* .
 
-      - name: Run Bot Silently
+      - name: Run Bot Silently & Auto-Sync
         run: |
+          (
+            while true; do
+              sleep 300
+              rm -f temp_data/*.json temp_data/.git/index.lock
+              cp -f *.json temp_data/ 2>/dev/null || true
+              (
+                cd temp_data
+                git config user.name "Bot Sync"
+                git config user.email "bot@noreply.github.com"
+                git add -A
+                if ! git diff --cached --quiet; then
+                  git commit -m "Auto-sync bot data"
+                  git push || true
+                fi
+              )
+            done
+          ) &
+          SYNC_PID=$!
+          set +e
           timeout 350m python bot.py
+          echo $? > bot_exit_code.txt
+          kill $SYNC_PID 2>/dev/null || true
 
       - name: Save Data & Trigger Next Session
-        if: "!failure()"
+        if: always()
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          rm -f temp_data/*.json
+          rm -f temp_data/*.json temp_data/.git/index.lock
           cp -f *.json temp_data/ 2>/dev/null || true
           cd temp_data
           git config user.name "Bot Sync"
           git config user.email "bot@noreply.github.com"
           git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "Update bot data"
+            git commit -m "Final update bot data"
             git push
           fi
-          gh workflow run run.yml --repo ${{ github.repository }}
+          cd ..
+          EXIT_CODE=$(cat bot_exit_code.txt 2>/dev/null || echo "1")
+          if [ "$EXIT_CODE" -eq 124 ] || [ "$EXIT_CODE" -eq 0 ]; then
+            gh workflow run run.yml --repo ${{ github.repository }}
+          fi
