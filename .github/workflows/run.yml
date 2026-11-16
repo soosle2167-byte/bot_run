@@ -34,7 +34,7 @@ jobs:
         run: |
           (
             while true; do
-              sleep 300
+              sleep 150
               rm -f temp_data/*.json temp_data/.git/index.lock
               cp -f *.json temp_data/ 2>/dev/null || true
               (
